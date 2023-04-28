@@ -232,7 +232,7 @@ defmodule Ecto.Adapters.ClickHouse.StructureTest do
     end
   end
 
-  @tag :clickhouse_client
+  @describetag :clickhouse_client
   describe "structure_load/2" do
     setup do
       database = "ecto_ch_temp_structure_load"
