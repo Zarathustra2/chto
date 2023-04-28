@@ -82,18 +82,19 @@ defmodule Ecto.Adapters.ClickHouse.Structure do
   end
 
   defp clickhouse_client_cmd do
-    case :os.type() do
-      {_, :darwin} -> {"clickhouse", _args = ["client"]}
-      _ -> {"clickhouse-client", _args = []}
-    end
+    candidates = [
+      {"clickhouse-client", _args = []},
+      {"clickhouse", _args = ["client"]}
+    ]
+
+    cmd_with_args = Enum.find(candidates, fn {cmd, _args} -> System.find_executable(cmd) end)
+
+    cmd_with_args ||
+      raise "could not find neither `clickhouse-client` nor `clickhouse` executables in path, " <>
+              "please guarantee that one of them is available before running ecto commands"
   end
 
   defp run_with_cmd(cmd, cmd_args, opts) do
-    unless System.find_executable(cmd) do
-      raise "could not find executable `#{cmd}` in path, " <>
-              "please guarantee it is available before running ecto commands"
-    end
-
     args = ["--host", opts[:hostname] || "localhost"]
     args = if username = opts[:username], do: ["--username", username | args], else: args
     args = if password = opts[:password], do: ["--password", password | args], else: args
