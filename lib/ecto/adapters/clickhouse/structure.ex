@@ -5,18 +5,17 @@ defmodule Ecto.Adapters.ClickHouse.Structure do
 
   @conn Ecto.Adapters.ClickHouse.Connection
 
-  # TODO include views
-
   def structure_load(default, config) do
     path = config[:dump_path] || Path.join(default, "structure.sql")
+    {cmd, cmd_args} = clickhouse_client_cmd()
 
-    args = ["--queries-file", path]
-
-    case run_with_cmd("clickhouse-client", config, args) do
+    case run_with_cmd(cmd, cmd_args ++ ["--queries-file", path], config) do
       {_output, 0} -> {:ok, path}
       {output, _} -> {:error, output}
     end
   end
+
+  # TODO include views
 
   def structure_dump(default, config) do
     path = config[:dump_path] || Path.join(default, "structure.sql")
@@ -82,30 +81,25 @@ defmodule Ecto.Adapters.ClickHouse.Structure do
     end
   end
 
-  defp run_with_cmd(cmd, opts, opt_args, cmd_opts \\ []) do
+  defp clickhouse_client_cmd do
+    case :os.type() do
+      {_, :darwin} -> {"clickhouse", _args = ["client"]}
+      _ -> {"clickhouse-client", _args = []}
+    end
+  end
+
+  defp run_with_cmd(cmd, cmd_args, opts) do
     unless System.find_executable(cmd) do
       raise "could not find executable `#{cmd}` in path, " <>
               "please guarantee it is available before running ecto commands"
     end
 
-    args = []
-
+    args = ["--host", opts[:hostname] || "localhost"]
     args = if username = opts[:username], do: ["--username", username | args], else: args
-
     args = if password = opts[:password], do: ["--password", password | args], else: args
-
     args = if port = opts[:port], do: ["--port", to_string(port) | args], else: args
     args = if database = opts[:database], do: ["--database", database | args], else: args
 
-    host = opts[:hostname] || "localhost"
-
-    args = ["--host", host | args]
-    args = args ++ opt_args
-
-    cmd_opts =
-      cmd_opts
-      |> Keyword.put_new(:stderr_to_stdout, true)
-
-    System.cmd(cmd, args, cmd_opts)
+    System.cmd(cmd, cmd_args ++ args, stderr_to_stdout: true)
   end
 end
