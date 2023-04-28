@@ -90,7 +90,7 @@ defmodule Ecto.Adapters.ClickHouse.Structure do
     cmd_with_args = Enum.find(candidates, fn {cmd, _args} -> System.find_executable(cmd) end)
 
     cmd_with_args ||
-      raise "could not find neither `clickhouse-client` nor `clickhouse` executables in path, " <>
+      raise "could not find `clickhouse-client` nor `clickhouse` executables in path, " <>
               "please guarantee that one of them is available before running ecto commands"
   end
 
